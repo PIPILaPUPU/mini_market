@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: minimarket
+      POSTGRES_USER: minimarket
+      POSTGRES_PASSWORD: minimarket
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - minimarket_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minimarket -d minimarket"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    command:
+      - postgres
+      - postgres://minimarket:minimarket@postgres:5432/minimarket?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  auth-app:
+    build:
+      context: .
+      dockerfile: auth-app/Dockerfile
+    environment:
+      DATABASE_URL: postgres://minimarket:minimarket@postgres:5432/minimarket?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-mini-market-auth}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
+      HTTP_PORT: "8080"
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-lax}
+    ports:
+      - "${AUTH_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  minimarket_postgres:
