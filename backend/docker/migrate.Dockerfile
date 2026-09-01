@@ -11,5 +11,6 @@ FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY auth-app/migrations /migrations
+COPY buySell-app/migrations /migrations
 
 ENTRYPOINT ["goose", "-dir", "/migrations"]

@@ -55,5 +55,27 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  buysell-app:
+    build:
+      context: .
+      dockerfile: buySell-app/Dockerfile
+    environment:
+      DATABASE_URL: postgres://minimarket:minimarket@postgres:5432/minimarket?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-mini-market-auth}
+      HTTP_PORT: "8081"
+    ports:
+      - "${BUYSELL_PORT:-8081}:8081"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/items_health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
 volumes:
   minimarket_postgres:
