@@ -66,17 +66,27 @@ func run() error {
 	walletService := service.NewWalletService(walletRepository)
 	walletHandler := handler.NewWalletHandler(walletService)
 
+	cartRepository := repository.NewPostgresCartRepository(db)
+	cartService := service.NewCartService(cartRepository)
+	cartHandler := handler.NewCartHandler(cartService)
+
 	authMiddleware := buysellauth.NewMiddleware(cfg.JWTSecret, cfg.JWTIssuer)
 
 	r.Get("/items/{id}", itemHandler.GetItem)
 	r.Get("/items", itemHandler.GetItemsList)
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware.Authenticate)
+		//items
 		r.Post("/items", itemHandler.CreateItem)
+		//wallet
 		r.Get("/wallet", walletHandler.GetBalance)
 		r.Get("/wallet/transactions", walletHandler.GetTransactionsList)
 		r.Post("/wallet/deposit", walletHandler.Deposit)
 		r.Post("/wallet/charge", walletHandler.Charge)
+		//cart
+		r.Get("/cart", cartHandler.GetCart)
+		r.Post("/cart", cartHandler.AddToCart)
+		r.Delete("/cart/{itemID}", cartHandler.RemoveFromCart)
 	})
 
 	server := &http.Server{
