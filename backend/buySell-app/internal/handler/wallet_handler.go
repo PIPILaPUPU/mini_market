@@ -60,7 +60,7 @@ func (h *WalletHandler) Deposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := h.walletService.Deposit(r.Context(), claims.UserID, request.Amount)
+	balance, err := h.walletService.Deposit(r.Context(), claims.UserID, request)
 	if err != nil {
 		h.writeWalletError(w, err)
 		return
@@ -92,7 +92,12 @@ func (h *WalletHandler) Charge(w http.ResponseWriter, r *http.Request) {
 func (h *WalletHandler) writeWalletError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrInvalidAmount),
-		errors.Is(err, service.ErrReferenceRequired):
+		errors.Is(err, service.ErrReferenceRequired),
+		errors.Is(err, service.ErrInvalidCardNumber),
+		errors.Is(err, service.ErrUnsupportedCard),
+		errors.Is(err, service.ErrInvalidExpirationDate),
+		errors.Is(err, service.ErrExpiredCard),
+		errors.Is(err, service.ErrInvalidCVV):
 		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
 	case errors.Is(err, repository.ErrInsufficientFunds):
 		writeError(w, http.StatusConflict, "insufficient_funds", err.Error())

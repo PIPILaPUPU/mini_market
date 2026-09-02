@@ -9,6 +9,9 @@ export default defineConfig({
     proxy: {
       "/auth": "http://localhost:8080",
       "/health": "http://localhost:8080",
+      "/items": "http://localhost:8081",
+      "/cart": "http://localhost:8081",
+      "/wallet": "http://localhost:8081",
     },
   },
 });

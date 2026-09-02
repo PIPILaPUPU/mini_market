@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"minimarket/buySell-app/internal/model"
 	"minimarket/buySell-app/internal/repository"
@@ -32,15 +34,19 @@ func (s *WalletService) TransactionsList(ctx context.Context, userID uuid.UUID) 
 	return s.walletRepository.TransactionsList(ctx, userID)
 }
 
-func (s *WalletService) Deposit(ctx context.Context, userID uuid.UUID, amount float64) (float64, error) {
-	if amount <= 0 {
+func (s *WalletService) Deposit(ctx context.Context, userID uuid.UUID, request model.DepositRequest) (float64, error) {
+	if request.Amount <= 0 {
 		return 0, ErrInvalidAmount
+	}
+	card, err := validateCard(request.Card, time.Now())
+	if err != nil {
+		return 0, err
 	}
 	return s.walletRepository.ApplyTransaction(ctx, model.WalletTransaction{
 		UserID:      userID,
-		Amount:      amount,
+		Amount:      request.Amount,
 		Type:        "deposit",
-		ReferenceID: "manual",
+		ReferenceID: fmt.Sprintf("card:%s:%s", card.paymentSystem, card.lastFour),
 	})
 }
 

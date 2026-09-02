@@ -13,6 +13,13 @@ type Wallet struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Card struct {
+	CardNumber string `json:"card_number"`
+	ExpMonth   int    `json:"exp_month"`
+	ExpYear    int    `json:"exp_year"`
+	CVV        string `json:"cvv"`
+}
+
 type WalletTransaction struct {
 	ID          uuid.UUID `json:"id"`
 	UserID      uuid.UUID `json:"user_id"`
@@ -25,6 +32,7 @@ type WalletTransaction struct {
 
 type DepositRequest struct {
 	Amount float64 `json:"amount"`
+	Card   Card    `json:"card"`
 }
 
 type ChargeRequest struct {

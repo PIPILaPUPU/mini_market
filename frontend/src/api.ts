@@ -6,6 +6,38 @@ export interface User {
   last_name: string;
 }
 
+export interface Item {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CartItem {
+  id: string;
+  item: Item;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BalanceResponse {
+  balance: number;
+}
+
+export interface DepositPayload {
+  amount: number;
+  card: {
+    card_number: string;
+    exp_month: number;
+    exp_year: number;
+    cvv: string;
+  };
+}
+
 export interface AuthResponse {
   user: User;
   access_token: string;
@@ -22,6 +54,7 @@ export interface RegisterPayload {
 }
 
 interface ApiErrorPayload {
+  code?: string;
   error?: string;
   message?: string;
 }
@@ -37,20 +70,41 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, body: unknown): Promise<T> {
+type RequestOptions = {
+  method?: "GET" | "POST" | "DELETE";
+  body?: unknown;
+  token?: string;
+};
+
+async function request<T>(
+  path: string,
+  { method = "GET", body, token }: RequestOptions = {},
+): Promise<T> {
   let response: Response;
   try {
+    const headers = new Headers();
+    if (body !== undefined) {
+      headers.set("Content-Type", "application/json");
+    }
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     response = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method,
+      headers,
       credentials: "include",
-      body: JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(
-      "Сервис авторизации недоступен. Проверьте, что backend запущен.",
+      "Сервис недоступен. Проверьте подключение и повторите попытку.",
       0,
     );
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   const payload = (await response.json().catch(() => ({}))) as ApiErrorPayload;
@@ -58,7 +112,7 @@ async function request<T>(path: string, body: unknown): Promise<T> {
     throw new ApiError(
       payload.message ?? "Не удалось выполнить запрос",
       response.status,
-      payload.error,
+      payload.error ?? payload.code,
     );
   }
 
@@ -66,16 +120,58 @@ async function request<T>(path: string, body: unknown): Promise<T> {
 }
 
 export function login(username: string, password: string) {
-  return request<AuthResponse>("/auth/login", { username, password });
+  return request<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: { username, password },
+  });
 }
 
 export function register(payload: RegisterPayload) {
-  return request<AuthResponse>("/auth/register", payload);
+  return request<AuthResponse>("/auth/register", {
+    method: "POST",
+    body: payload,
+  });
 }
 
-export async function closeRegistrationSession() {
-  await fetch("/auth/logout", {
+export function getCurrentUser(token: string) {
+  return request<User>("/auth/me", { token });
+}
+
+export function logout() {
+  return request<void>("/auth/logout", { method: "POST" });
+}
+
+export function getItems() {
+  return request<Item[]>("/items");
+}
+
+export function getBalance(token: string) {
+  return request<BalanceResponse>("/wallet", { token });
+}
+
+export function deposit(token: string, payload: DepositPayload) {
+  return request<BalanceResponse>("/wallet/deposit", {
     method: "POST",
-    credentials: "include",
+    token,
+    body: payload,
+  });
+}
+
+export function getCart(token: string) {
+  return request<CartItem[]>("/cart", { token });
+}
+
+export function addToCart(token: string, itemId: string, quantity = 1) {
+  return request<CartItem>("/cart", {
+    method: "POST",
+    token,
+    body: { item_id: itemId, quantity },
+  });
+}
+
+export function removeFromCart(token: string, itemId: string) {
+  return request<void>(`/cart/${encodeURIComponent(itemId)}`, {
+    method: "DELETE",
+    token,
   });
 }
