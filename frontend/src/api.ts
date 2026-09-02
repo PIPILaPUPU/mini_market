@@ -28,6 +28,16 @@ export interface BalanceResponse {
   balance: number;
 }
 
+export interface DepositPayload {
+  amount: number;
+  card: {
+    card_number: string;
+    exp_month: number;
+    exp_year: number;
+    cvv: string;
+  };
+}
+
 export interface AuthResponse {
   user: User;
   access_token: string;
@@ -137,6 +147,14 @@ export function getItems() {
 
 export function getBalance(token: string) {
   return request<BalanceResponse>("/wallet", { token });
+}
+
+export function deposit(token: string, payload: DepositPayload) {
+  return request<BalanceResponse>("/wallet/deposit", {
+    method: "POST",
+    token,
+    body: payload,
+  });
 }
 
 export function getCart(token: string) {
