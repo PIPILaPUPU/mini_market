@@ -30,7 +30,7 @@ func NewPostgresCartRepository(pool *pgxpool.Pool) *PostgresCartRepository {
 
 const cartItemColumns = `
 	ci.id,
-	i.id, i.name, i.description, i.price, i.created_at, i.updated_at,
+	i.id, i.name, i.description, i.price, i.image_url, i.created_at, i.updated_at,
 	ci.quantity, ci.created_at, ci.updated_at`
 
 func (r *PostgresCartRepository) GetCart(ctx context.Context, userID uuid.UUID) ([]model.CartItem, error) {
@@ -78,7 +78,7 @@ func (r *PostgresCartRepository) AddToCart(
 		)
 		SELECT
 			u.id,
-			i.id, i.name, i.description, i.price, i.created_at, i.updated_at,
+			i.id, i.name, i.description, i.price, i.image_url, i.created_at, i.updated_at,
 			u.quantity, u.created_at, u.updated_at
 		FROM upserted u
 		JOIN items i ON i.id = u.item_id`,
@@ -122,6 +122,7 @@ func scanCartItem(row cartItemScanner) (*model.CartItem, error) {
 		&cartItem.Item.Name,
 		&cartItem.Item.Description,
 		&cartItem.Item.Price,
+		&cartItem.Item.ImageURL,
 		&cartItem.Item.CreatedAt,
 		&cartItem.Item.UpdatedAt,
 		&cartItem.Quantity,

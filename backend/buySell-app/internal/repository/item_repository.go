@@ -30,12 +30,12 @@ func NewPostgresBuySellRepository(pool *pgxpool.Pool) *PostgresBuySellRepository
 	return &PostgresBuySellRepository{pool: pool}
 }
 
-const itemColumns = `id, name, description, price, created_at, updated_at`
+const itemColumns = `id, name, description, price, image_url, created_at, updated_at`
 
 func (r *PostgresBuySellRepository) GetItem(ctx context.Context, id uuid.UUID) (*model.Item, error) {
 	row := r.pool.QueryRow(ctx, "SELECT "+itemColumns+" FROM items WHERE id = $1", id)
 	var item model.Item
-	err := row.Scan(&item.ID, &item.Name, &item.Description, &item.Price, &item.CreatedAt, &item.UpdatedAt)
+	err := row.Scan(&item.ID, &item.Name, &item.Description, &item.Price, &item.ImageURL, &item.CreatedAt, &item.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -55,7 +55,7 @@ func (r *PostgresBuySellRepository) GetItemsList(ctx context.Context) ([]*model.
 	items := make([]*model.Item, 0)
 	for rows.Next() {
 		var item model.Item
-		err := rows.Scan(&item.ID, &item.Name, &item.Description, &item.Price, &item.CreatedAt, &item.UpdatedAt)
+		err := rows.Scan(&item.ID, &item.Name, &item.Description, &item.Price, &item.ImageURL, &item.CreatedAt, &item.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("get items list: %w", err)
 		}
@@ -65,10 +65,10 @@ func (r *PostgresBuySellRepository) GetItemsList(ctx context.Context) ([]*model.
 }
 
 func (r *PostgresBuySellRepository) CreateItem(ctx context.Context, item model.CreateItemRequest) (*model.Item, error) {
-	query := `INSERT INTO items (name, description, price) VALUES ($1, $2, $3) RETURNING ` + itemColumns
-	row := r.pool.QueryRow(ctx, query, item.Name, item.Description, item.Price)
+	query := `INSERT INTO items (name, description, price, image_url) VALUES ($1, $2, $3, $4) RETURNING ` + itemColumns
+	row := r.pool.QueryRow(ctx, query, item.Name, item.Description, item.Price, item.ImageURL)
 	var createdItem model.Item
-	err := row.Scan(&createdItem.ID, &createdItem.Name, &createdItem.Description, &createdItem.Price, &createdItem.CreatedAt, &createdItem.UpdatedAt)
+	err := row.Scan(&createdItem.ID, &createdItem.Name, &createdItem.Description, &createdItem.Price, &createdItem.ImageURL, &createdItem.CreatedAt, &createdItem.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create item: %w", err)
 	}

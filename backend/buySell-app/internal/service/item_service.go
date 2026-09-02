@@ -44,5 +44,6 @@ func (s *ItemService) CreateItem(ctx context.Context, item model.CreateItemReque
 
 	item.Name = name
 	item.Description = desc
+	item.ImageURL = strings.TrimSpace(item.ImageURL)
 	return s.repository.CreateItem(ctx, item)
 }
